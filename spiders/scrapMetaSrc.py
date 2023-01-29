@@ -1,10 +1,9 @@
 import scrapy
 import logging
-from scrapy.crawler import CrawlerProcess
-from scrapy.utils.project import get_project_settings
+
 
 from riotwatcher import LolWatcher
-from MetaSraper.items import champItem
+from MetaScraper.items import champItem
 from scrapy.loader import ItemLoader
 class MetaSpider(scrapy.Spider):
     name = 'metaspider'
@@ -15,13 +14,15 @@ class MetaSpider(scrapy.Spider):
     champions_version = versions['n']['champion']
     current_champ_list = lol_watcher.data_dragon.champions(champions_version)['data']
     champNames = [x for x in current_champ_list]
-    
+    global mode
+    mode = "urf";
     #Create urls list
     start_urls = []
     
     for x in champNames:
-        start_urls.append('https://www.metasrc.com/aram/champion/' + x.lower())
         
+        start_urls.append('https://www.metasrc.com/'+mode+'/champion/' + x.lower())
+        #start_urls.append('https://www.metasrc.com/urf/champion/' + x.lower())
     
     
     logging.getLogger('scrapy').setLevel(logging.WARNING)
@@ -32,14 +33,17 @@ class MetaSpider(scrapy.Spider):
         #print (champName)
         champRelations = {};
         
-        
-        champdivs = response.xpath('//div[@class=" _c8xw44 _cu8r22"]')
+        if(mode == "aram"):
+            champdivs = response.xpath('//div[@class=" _c8xw44 _cu8r22"]')
+        else:
+            champdivs = response.xpath('//div[@class=" _qo5b4m _cu8r22"]')
+            
         for node in champdivs:
             if("team" in node.xpath(".//h2/text()").get()):
                 aElements = node.xpath(".//a")
                 for i in aElements.xpath('.//div[contains(@class, "_95ecnz")]'):
                     
-                    reChamp = i.attrib['data-search-terms-like'].split("|")[1] #name of relating Champ
+                    reChamp = i.attrib['data-search-terms-like'].split("|")[1].lower() #name of relating Champ
                     
                     reStat = i.xpath('.//div[@class=" _9581uw"]/text()').get()
                     if(reStat == None):
